@@ -1,0 +1,17 @@
+# Java 编译文件
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE 文件
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# 构建目录
+target/
+build/
+bin/

@@ -1,0 +1,91 @@
+server:
+  port: 8080
+  # 统一错误处理（生产环境建议关闭详细错误页面）
+  error:
+    include-message: always
+
+spring:
+  # =============================================
+  # Redis 配置（用于 Nonce 防重放 + 接口限流缓存）
+  # =============================================
+  redis:
+    host: localhost
+    port: 6379
+    password:           # Redis 密码（如有则填写）
+    database: 0
+    lettuce:
+      pool:
+        max-active: 8       # 最大连接数
+        max-idle: 8         # 最大空闲连接
+        min-idle: 2         # 最小空闲连接
+        max-wait: -1ms      # 获取连接超时时间（-1表示无限等待）
+
+  # =============================================
+  # 数据源配置（多客户端密钥管理，可选）
+  # 如果不使用数据库，设置 api.use-database=false 即可
+  # =============================================
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/api_sign_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+# =============================================
+# MyBatis Plus 配置
+# =============================================
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.example.springbootapisign.entity
+  configuration:
+    map-underscore-to-camel-case: true   # 下划线转驼峰
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # SQL 日志（生产环境建议关闭）
+
+# =============================================
+# 接口签名全局配置（核心配置区域）
+# =============================================
+api:
+  # 请求有效时间 单位秒 超过则请求过期拦截
+  sign-expire: 300000
+  
+  # 是否启用数据库动态密钥管理
+  # true=从数据库sys_app_client表查询（生产推荐）
+  # false=使用下面配置的默认值（开发/测试用）
+  use-database: false
+  
+  # 是否使用 HMAC-SHA256 加密算法
+  # true=HMAC-SHA256（高安全，支付/金融接口强制要求）
+  # false=MD5（兼容性好，但存在彩虹表破解风险）
+  use-hmac: false
+  
+  # 是否启用接口限流
+  enable-rate-limit: true
+  
+  # 限流阈值：每分钟最大请求数（基于AppKey维度）
+  rate-limit-count: 1000
+  
+  # 默认客户端密钥配置（当 use-database=false 时生效）
+  app:
+    key: test_app_key_123456
+    secret: test_app_secret_654321_abcdef123456
+
+# =============================================
+# 日志配置
+# =============================================
+logging:
+  level:
+    root: INFO
+    com.example.springbootapisign.interceptor: DEBUG   # 签名校验详细日志（生产改为INFO）
+    com.example.springbootapisign: DEBUG               # 项目日志
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/springboot-api-sign.log
+    max-size: 100MB
+    max-history: 30
